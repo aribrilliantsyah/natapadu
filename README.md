@@ -8,7 +8,7 @@
 
 Aplikasi desktop untuk mengolah master data berukuran besar dari Excel — ratusan ribu hingga jutaan baris — dengan template dinamis, filter analitik, dan SQLite lokal. Berjalan sepenuhnya offline.
 
-[![Build](https://github.com/OWNER/REPO/actions/workflows/build.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/build.yml)
+[![Build](https://github.com/aribrilliantsyah/natapadu/actions/workflows/build.yml/badge.svg)](https://github.com/aribrilliantsyah/natapadu/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.23-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00?logo=svelte&logoColor=white)](https://svelte.dev)

@@ -1,7 +1,11 @@
 # Hasil build
 build/bin
 /natapadu-app
-frontend/dist
+# Isi hasil build diabaikan, tapi foldernya wajib ada:
+# main.go memakai //go:embed all:frontend/dist, yang gagal kompilasi
+# kalau direktorinya tidak ada sama sekali (checkout bersih di CI).
+frontend/dist/*
+!frontend/dist/.gitkeep
 
 # Dependensi
 node_modules
