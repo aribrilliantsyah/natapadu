@@ -16,8 +16,7 @@ permissions:
   contents: write
 
 env:
-  GO_VERSION: '1.23'
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
 
 jobs:
   # Verifikasi cepat sebelum build panjang: gagal di sini artinya artefaknya
@@ -30,7 +29,7 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod   # satu sumber kebenaran, ikut go.mod
           cache: true
 
       - uses: actions/setup-node@v7
@@ -62,7 +61,7 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod   # satu sumber kebenaran, ikut go.mod
           cache: true
 
       - uses: actions/setup-node@v7
@@ -150,7 +149,7 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod   # satu sumber kebenaran, ikut go.mod
           cache: true
 
       - uses: actions/setup-node@v7
