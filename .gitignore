@@ -1,0 +1,12 @@
+# Hasil build
+build/bin
+/natapadu-app
+frontend/dist
+
+# Dependensi
+node_modules
+
+# Database lokal (data pengguna, jangan pernah ikut ter-commit)
+*.db
+*.db-wal
+*.db-shm
