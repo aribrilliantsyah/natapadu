@@ -11,7 +11,8 @@ Aplikasi desktop untuk mengolah master data berukuran besar dari Excel — ratus
 [![Build](https://github.com/aribrilliantsyah/natapadu/actions/workflows/build.yml/badge.svg)](https://github.com/aribrilliantsyah/natapadu/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white)](https://go.dev)
-[![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00?logo=svelte&logoColor=white)](https://svelte.dev)
+[![Wails](https://img.shields.io/badge/Wails-v2.15-DF0000)](https://wails.io)
+[![Svelte](https://img.shields.io/badge/Svelte-5.55-FF3E00?logo=svelte&logoColor=white)](https://svelte.dev)
 
 </div>
 
@@ -73,7 +74,7 @@ chmod +x Natapadu-x86_64.AppImage
 
 ## Menjalankan dari Sumber
 
-**Prasyarat:** Go 1.25+, Node.js 22+, dan [Wails CLI](https://wails.io).
+**Prasyarat:** Go 1.25+, Node.js 22+, dan [Wails CLI](https://wails.io) v2.
 
 ```bash
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
@@ -154,13 +155,17 @@ frontend/src/
 
 ### Tumpukan Teknologi
 
-| Komponen | Pilihan | Alasan |
+| Komponen | Versi | Alasan |
 |---|---|---|
-| Desktop shell | Wails v2 | Binary native, RAM rendah, RPC Go ↔ TypeScript |
-| Backend | Go 1.25 | Cepat, goroutine untuk streaming, mudah cross-compile |
-| Database | `modernc.org/sqlite` | Pure Go tanpa CGO, satu berkas portabel |
-| Excel | `excelize/v2` | Stream reader & writer, footprint memori kecil |
-| Frontend | Svelte 5 + TypeScript | Tanpa virtual DOM, bundle kecil |
+| Desktop shell | Wails **v2.15** | Binary native, RAM rendah, RPC Go ↔ TypeScript |
+| Backend | Go **1.25** | Cepat, goroutine untuk streaming, mudah cross-compile |
+| Database | `modernc.org/sqlite` **v1.57** | Pure Go tanpa CGO, satu berkas portabel |
+| Excel | `excelize/v2` **v2.11** | Stream reader & writer, footprint memori kecil |
+| Frontend | Svelte **5.55** + TypeScript **5.6** | Tanpa virtual DOM, bundle kecil |
+| Build tool | Vite **7.3** | Build frontend, dev server dengan hot reload |
+| Styling | Tailwind CSS **4.3** | Utility-first, dipadu token warna sendiri |
+
+Versi Go di CI dibaca langsung dari `go.mod`, jadi tabel ini dan pipeline build tidak akan melenceng satu sama lain.
 
 ## Data Anda
 
