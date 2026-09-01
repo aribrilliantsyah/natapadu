@@ -90,12 +90,70 @@ func (a *App) domReady(ctx context.Context) {
 // Dipanggil frontend setelah persiapan awal selesai.
 func (a *App) ShowMainWindow(width, height, minWidth, minHeight int) {
 	wailsRuntime.WindowSetAlwaysOnTop(a.ctx, false)
+
+	// Jendela disembunyikan dulu, diubah ukurannya, baru ditampilkan lagi.
+	//
+	// Di Wayland aplikasi TIDAK BOLEH memposisikan jendelanya sendiri —
+	// gtk_window_move() diabaikan compositor, sehingga WindowCenter maupun
+	// WindowSetPosition tidak berpengaruh sama sekali. Kalau jendela splash
+	// langsung diperbesar, ia tumbuh dari sudut kiri-atasnya dan mendarat
+	// melenceng sejauh setengah selisih ukuran. Menyembunyikan lalu
+	// menampilkannya kembali membuat compositor menempatkannya ulang seperti
+	// jendela baru — sekaligus terasa seperti splash yang ditutup lalu
+	// jendela utama dibuka.
+	wailsRuntime.WindowHide(a.ctx)
+
 	// Batas minimum dinaikkan lebih dulu, lalu ukurannya — urutan terbalik
 	// membuat jendela tertahan di ukuran splash pada sebagian window manager.
 	wailsRuntime.WindowSetMinSize(a.ctx, minWidth, minHeight)
 	wailsRuntime.WindowSetSize(a.ctx, width, height)
 	wailsRuntime.WindowSetTitle(a.ctx, "Natapadu - Navigasi Master Data dan Alat Terpadu")
-	wailsRuntime.WindowCenter(a.ctx)
+
+	// Untuk X11, Windows, dan macOS yang memang mengizinkan penempatan sendiri
+	a.centerWindow(width, height)
+
+	wailsRuntime.WindowShow(a.ctx)
+}
+
+// centerWindow memposisikan jendela berdasarkan ukuran yang DIMINTA, bukan
+// ukuran yang sedang dilaporkan sistem.
+//
+// WindowCenter bawaan menghitung posisinya dari gtk_window_get_size(), padahal
+// gtk_window_resize() barusan hanya mengajukan permintaan yang belum diterapkan
+// window manager. Ukuran yang terbaca masih sebesar splash, sehingga jendela
+// utama mendarat melenceng ke kanan-bawah sejauh setengah selisih ukurannya.
+func (a *App) centerWindow(width, height int) {
+	screens, err := wailsRuntime.ScreenGetAll(a.ctx)
+	if err != nil || len(screens) == 0 {
+		wailsRuntime.WindowCenter(a.ctx) // biar sistem yang menebak
+		return
+	}
+
+	screen := screens[0]
+	for _, s := range screens {
+		if s.IsCurrent {
+			screen = s
+			break
+		}
+	}
+
+	sw, sh := screen.Size.Width, screen.Size.Height
+	if sw <= 0 || sh <= 0 {
+		sw, sh = screen.Width, screen.Height // ladang lama, untuk platform yang belum mengisi Size
+	}
+	if sw <= 0 || sh <= 0 {
+		wailsRuntime.WindowCenter(a.ctx)
+		return
+	}
+
+	x, y := (sw-width)/2, (sh-height)/2
+	if x < 0 {
+		x = 0
+	}
+	if y < 0 {
+		y = 0
+	}
+	wailsRuntime.WindowSetPosition(a.ctx, x, y)
 }
 
 // ==========================================
