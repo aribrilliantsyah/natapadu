@@ -170,6 +170,10 @@ export function SetSetting(arg1, arg2) {
   return window['go']['main']['App']['SetSetting'](arg1, arg2);
 }
 
+export function ShowMainWindow(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['ShowMainWindow'](arg1, arg2, arg3, arg4);
+}
+
 export function StartImport(arg1, arg2, arg3) {
   return window['go']['main']['App']['StartImport'](arg1, arg2, arg3);
 }

@@ -22,17 +22,34 @@ var Version = "dev"
 // UpdateRepo adalah repositori GitHub tempat rilis dicari.
 const UpdateRepo = "aribrilliantsyah/natapadu"
 
+// Ukuran jendela. Aplikasi dibuka sebagai kotak splash kecil di tengah layar,
+// lalu dibesarkan ke ukuran kerja setelah persiapan selesai.
+const (
+	splashWidth  = 460
+	splashHeight = 280
+
+	mainWidth     = 1366
+	mainHeight    = 860
+	mainMinWidth  = 1024
+	mainMinHeight = 700
+)
+
 func main() {
 	// Create an instance of the app structure
 	app := NewApp(Version, UpdateRepo)
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:     "Natapadu - Navigasi Master Data dan Alat Terpadu",
-		Width:     1366,
-		Height:    860,
-		MinWidth:  1024,
-		MinHeight: 700,
+		Title:  "Natapadu",
+		Width:  splashWidth,
+		Height: splashHeight,
+		// Batas minimum menyusul setelah splash; kalau dipasang sekarang,
+		// jendela tidak bisa mengecil ke ukuran splash.
+		MinWidth:  splashWidth,
+		MinHeight: splashHeight,
+		// Jendela ditahan sampai splash siap digambar, supaya tidak ada
+		// kedipan kotak kosong sebelum isinya muncul.
+		StartHidden: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

@@ -1,11 +1,17 @@
 <script lang="ts">
-  let { done = false }: { done?: boolean } = $props();
+  // Splash mengisi seluruh jendela kecil (460×280) sebelum jendela dibesarkan.
+  // Tahapannya nyata — teksnya mengikuti pekerjaan yang benar-benar sedang berjalan,
+  // bukan animasi hiasan yang jalan sendiri.
+  let { stage = '', progress = 0, version = '' }: {
+    stage?: string;
+    progress?: number;   // 0..100
+    version?: string;
+  } = $props();
 </script>
 
-<!-- Splash desktop: tetap terlihat sampai sesi selesai diperiksa, lalu memudar -->
-<div class="splash" class:out={done}>
-  <div class="mark">
-    <svg viewBox="0 0 1024 1024" width="96" height="96" aria-hidden="true">
+<div class="splash">
+  <div class="body">
+    <svg viewBox="0 0 1024 1024" width="72" height="72" aria-hidden="true">
       <defs>
         <linearGradient id="sp-tool" x1="0.1" y1="0" x2="0.9" y2="1">
           <stop offset="0%" stop-color="#a9b8ff"/>
@@ -28,63 +34,99 @@
         <rect width="1024" height="1024" fill="url(#sp-tool)" mask="url(#sp-wrench)"/>
       </g>
     </svg>
+
+    <div class="name">Natapadu</div>
+    <div class="tag">Navigasi Master Data dan Alat Terpadu</div>
   </div>
 
-  <div class="name">Natapadu</div>
-  <div class="tag">Navigasi Master Data dan Alat Terpadu</div>
-
-  <div class="bar"><div class="bar-fill"></div></div>
+  <!-- Bar di bagian bawah jendela, seperti splash aplikasi desktop pada umumnya -->
+  <div class="foot">
+    <div class="line">
+      <span class="stage">{stage || 'Memuat...'}</span>
+      <span class="pct mono">{Math.round(progress)}%</span>
+    </div>
+    <div class="track">
+      <div class="fill" style="width:{Math.max(2, Math.min(100, progress))}%"></div>
+    </div>
+    {#if version}
+      <div class="ver mono">v{version}</div>
+    {/if}
+  </div>
 </div>
 
 <style>
   .splash {
-    position: fixed; inset: 0; z-index: 9999;
-    background: radial-gradient(120% 90% at 50% 0%, #232a42 0%, var(--bg, #0d0e11) 62%);
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(130% 100% at 50% 0%, #232a42 0%, #12141a 68%);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .body {
+    flex: 1;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 6px;
-    transition: opacity 320ms ease, visibility 320ms ease;
+    gap: 2px;
+    padding: 0 20px;
   }
-  .splash.out { opacity: 0; visibility: hidden; }
-
-  .mark {
-    animation: rise 520ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
-    filter: drop-shadow(0 10px 28px rgba(79,110,247,0.35));
+  .body svg {
+    filter: drop-shadow(0 8px 22px rgba(79,110,247,0.35));
+    animation: rise 420ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
   }
   .name {
-    margin-top: 14px;
-    font-size: 25px; font-weight: 700; letter-spacing: -0.6px;
-    color: var(--t1, #f0f1f4);
-    animation: rise 520ms 60ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    margin-top: 12px;
+    font-size: 22px; font-weight: 700; letter-spacing: -0.5px;
+    color: #f0f1f4;
+    animation: rise 420ms 60ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
   }
   .tag {
-    font-size: 12.5px; color: var(--t2, #8b90a0);
-    animation: rise 520ms 120ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    font-size: 11.5px; color: #8b90a0; text-align: center;
+    animation: rise 420ms 110ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
   }
 
-  .bar {
-    margin-top: 26px;
-    width: 168px; height: 3px; border-radius: 2px;
+  .foot {
+    padding: 12px 18px 14px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    background: rgba(0,0,0,0.22);
+  }
+  .line {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 7px;
+  }
+  .stage {
+    font-size: 11px; color: #8b90a0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .pct {
+    font-size: 10.5px; color: #4f5468;
+    font-variant-numeric: tabular-nums; flex-shrink: 0; margin-left: 10px;
+  }
+
+  .track {
+    height: 3px; border-radius: 2px;
     background: rgba(255,255,255,0.08);
     overflow: hidden;
   }
-  .bar-fill {
-    height: 100%; width: 42%; border-radius: 2px;
-    background: linear-gradient(90deg, transparent, #4f6ef7, transparent);
-    animation: sweep 1.1s ease-in-out infinite;
+  .fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, #4f6ef7, #8ea2ff);
+    transition: width 220ms ease;
+  }
+
+  .ver {
+    margin-top: 8px;
+    font-size: 10px; color: #3d4152; text-align: right;
   }
 
   @keyframes rise {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: none; }
-  }
-  @keyframes sweep {
-    0%   { transform: translateX(-140%); }
-    100% { transform: translateX(340%); }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .mark, .name, .tag { animation: none; }
-    .bar-fill { animation: none; width: 100%; }
+    .body svg, .name, .tag { animation: none; }
+    .fill { transition: none; }
   }
 </style>

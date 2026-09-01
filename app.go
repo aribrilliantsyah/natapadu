@@ -71,6 +71,21 @@ func NewApp(version, updateRepo string) *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	wailsRuntime.WindowCenter(ctx)
+	wailsRuntime.WindowSetAlwaysOnTop(ctx, true)
+	wailsRuntime.WindowShow(ctx)
+}
+
+// ShowMainWindow membesarkan jendela dari ukuran splash ke ukuran kerja.
+// Dipanggil frontend setelah persiapan awal selesai.
+func (a *App) ShowMainWindow(width, height, minWidth, minHeight int) {
+	wailsRuntime.WindowSetAlwaysOnTop(a.ctx, false)
+	// Batas minimum dinaikkan lebih dulu, lalu ukurannya — urutan terbalik
+	// membuat jendela tertahan di ukuran splash pada sebagian window manager.
+	wailsRuntime.WindowSetMinSize(a.ctx, minWidth, minHeight)
+	wailsRuntime.WindowSetSize(a.ctx, width, height)
+	wailsRuntime.WindowSetTitle(a.ctx, "Natapadu - Navigasi Master Data dan Alat Terpadu")
+	wailsRuntime.WindowCenter(a.ctx)
 }
 
 // ==========================================

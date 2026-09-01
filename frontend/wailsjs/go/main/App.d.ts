@@ -87,6 +87,8 @@ export function SelectExcelFile():Promise<string>;
 
 export function SetSetting(arg1:string,arg2:string):Promise<void>;
 
+export function ShowMainWindow(arg1:number,arg2:number,arg3:number,arg4:number):Promise<void>;
+
 export function StartImport(arg1:string,arg2:string,arg3:string):Promise<models.ImportHistory>;
 
 export function TruncateDataset(arg1:string):Promise<void>;
