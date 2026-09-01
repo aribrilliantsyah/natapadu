@@ -79,6 +79,8 @@ export function QueryData(arg1:models.QueryRequest):Promise<models.QueryResponse
 
 export function SaveDataRow(arg1:string,arg2:number,arg3:Record<string, string>):Promise<number>;
 
+export function SaveDataRows(arg1:string,arg2:Array<Record<string, string>>):Promise<models.SaveRowsResult>;
+
 export function SaveSavedFilter(arg1:models.SavedFilter):Promise<void>;
 
 export function SelectDirectory(arg1:string):Promise<string>;

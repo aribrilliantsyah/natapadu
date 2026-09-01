@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"natapadu-app/backend/activity"
@@ -405,6 +406,77 @@ func (a *App) SaveDataRow(templateID string, rowID int64, raw map[string]string)
 	}
 	_ = a.activitySvc.Log("", "", action, tpl.Name, fmt.Sprintf("Baris #%d disimpan manual di workspace '%s'", savedID, tpl.Name))
 	return savedID, nil
+}
+
+// SaveDataRows menyimpan banyak baris manual sekaligus.
+//
+// Seluruh baris divalidasi lebih dulu; bila ada yang gagal, TIDAK ADA yang
+// disimpan dan kesalahannya dikembalikan per sel. Menyimpan sebagian akan
+// membuat pengguna sulit tahu baris mana yang sudah masuk saat mengulang.
+//
+// Baris yang seluruh selnya kosong diabaikan — baris sisa di ujung tabel
+// masukan adalah hal yang lumrah, bukan kesalahan.
+func (a *App) SaveDataRows(templateID string, rows []map[string]string) (*models.SaveRowsResult, error) {
+	tpl, err := a.templateSvc.GetTemplateByID(templateID)
+	if err != nil {
+		return nil, err
+	}
+	if len(tpl.Columns) == 0 {
+		return nil, errors.New("workspace belum punya definisi kolom")
+	}
+
+	result := &models.SaveRowsResult{Errors: []models.RowError{}}
+	prepared := make([]map[string]interface{}, 0, len(rows))
+
+	for i, raw := range rows {
+		if isBlankRow(tpl.Columns, raw) {
+			result.Skipped++
+			continue
+		}
+
+		values := make(map[string]interface{}, len(tpl.Columns))
+		for _, c := range tpl.Columns {
+			v, err := a.importSvc.TransformAndValidate(raw[c.FieldName], c)
+			if err != nil {
+				result.Errors = append(result.Errors, models.RowError{
+					Index:  i,
+					Field:  c.FieldName,
+					Column: c.DisplayName,
+					Reason: err.Error(),
+				})
+				continue
+			}
+			values[c.FieldName] = v
+		}
+		prepared = append(prepared, values)
+	}
+
+	if len(result.Errors) > 0 {
+		return result, nil // biarkan UI menandai selnya, jangan simpan apa pun
+	}
+	if len(prepared) == 0 {
+		return result, nil
+	}
+
+	saved, err := a.dataGridSvc.InsertRows(templateID, prepared)
+	if err != nil {
+		return nil, err
+	}
+	result.Saved = saved
+
+	_ = a.activitySvc.Log("", "", "CREATE_ROWS", tpl.Name,
+		fmt.Sprintf("%d baris ditambahkan manual di workspace '%s'", saved, tpl.Name))
+	return result, nil
+}
+
+// isBlankRow menandai baris yang seluruh kolomnya kosong
+func isBlankRow(cols []models.TemplateColumn, raw map[string]string) bool {
+	for _, c := range cols {
+		if strings.TrimSpace(raw[c.FieldName]) != "" {
+			return false
+		}
+	}
+	return true
 }
 
 func (a *App) GetDataRow(templateID string, rowID int64) (map[string]interface{}, error) {

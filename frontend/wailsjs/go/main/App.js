@@ -154,6 +154,10 @@ export function SaveDataRow(arg1, arg2, arg3) {
   return window['go']['main']['App']['SaveDataRow'](arg1, arg2, arg3);
 }
 
+export function SaveDataRows(arg1, arg2) {
+  return window['go']['main']['App']['SaveDataRows'](arg1, arg2);
+}
+
 export function SaveSavedFilter(arg1) {
   return window['go']['main']['App']['SaveSavedFilter'](arg1);
 }

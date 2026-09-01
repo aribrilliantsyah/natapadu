@@ -615,3 +615,72 @@ func (s *DataGridService) GetDuplicateGroups(templateID string, fields []string,
 	}
 	return out, nil
 }
+
+// InsertRows menyimpan banyak baris manual dalam satu transaksi.
+// Semua baris berhasil, atau tidak ada satu pun yang tersimpan — tidak pernah separuh.
+func (s *DataGridService) InsertRows(templateID string, rows []map[string]interface{}) (int64, error) {
+	if len(rows) == 0 {
+		return 0, nil
+	}
+
+	tpl, err := s.templateSvc.GetTemplateByID(templateID)
+	if err != nil {
+		return 0, fmt.Errorf("workspace tidak ditemukan: %w", err)
+	}
+	if len(tpl.Columns) == 0 {
+		return 0, errors.New("workspace belum punya definisi kolom")
+	}
+
+	// Susunan kolom dikunci dari definisi template, tidak pernah dari kunci map
+	// masukan, sehingga nama kolom tidak mungkin berasal dari input pengguna.
+	cols := make([]string, 0, len(tpl.Columns)+1)
+	placeholders := make([]string, 0, len(tpl.Columns)+1)
+	for _, c := range tpl.Columns {
+		cols = append(cols, fmt.Sprintf("[%s]", c.FieldName))
+		placeholders = append(placeholders, "?")
+	}
+	cols = append(cols, "_import_id")
+	placeholders = append(placeholders, "?")
+
+	tableName := template.GetTableNameForTemplate(templateID)
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+		tableName, strings.Join(cols, ", "), strings.Join(placeholders, ", "))
+
+	tx, err := s.db.Conn().Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(query)
+	if err != nil {
+		return 0, err
+	}
+	defer stmt.Close()
+
+	var inserted int64
+	for i, row := range rows {
+		args := make([]interface{}, 0, len(tpl.Columns)+1)
+		for _, c := range tpl.Columns {
+			args = append(args, row[c.FieldName])
+		}
+		args = append(args, "MANUAL")
+
+		if _, err := stmt.Exec(args...); err != nil {
+			return 0, fmt.Errorf("baris ke-%d gagal disimpan: %w", i+1, err)
+		}
+		inserted++
+	}
+
+	if _, err := tx.Exec(
+		"UPDATE datasets SET record_count = record_count + ?, updated_at = ? WHERE template_id = ?",
+		inserted, time.Now(), templateID,
+	); err != nil {
+		return 0, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return inserted, nil
+}

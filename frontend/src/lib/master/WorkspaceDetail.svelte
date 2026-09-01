@@ -205,7 +205,7 @@
       <Upload size={12} /> Import Excel
     </button>
     <button class="btn btn-outline btn-xs" disabled={!ready} onclick={newRow}>
-      <Plus size={12} /> Tambah Baris
+      <Plus size={12} /> Tambah Data
     </button>
     <button class="btn btn-outline btn-xs" disabled={!ready} onclick={() => dialog = 'export'}>
       <Download size={12} /> Export
@@ -400,7 +400,7 @@
                         <Upload size={12} /> Import Excel
                       </button>
                       <button class="btn btn-outline btn-xs" onclick={newRow}>
-                        <Plus size={12} /> Tambah Baris
+                        <Plus size={12} /> Tambah Data
                       </button>
                     </div>
                   {/if}

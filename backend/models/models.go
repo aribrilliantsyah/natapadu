@@ -110,6 +110,21 @@ type ChartPoint struct {
 	Secondary int64  `json:"secondary"`
 }
 
+// RowError menunjuk satu sel yang gagal validasi saat penyimpanan massal
+type RowError struct {
+	Index  int    `json:"index"`  // baris ke berapa pada masukan (0-based)
+	Field  string `json:"field"`  // nama kolom database
+	Column string `json:"column"` // label kolom untuk ditampilkan
+	Reason string `json:"reason"`
+}
+
+// SaveRowsResult adalah hasil penyimpanan banyak baris sekaligus
+type SaveRowsResult struct {
+	Saved   int64      `json:"saved"`
+	Skipped int        `json:"skipped"` // baris kosong yang diabaikan
+	Errors  []RowError `json:"errors"`
+}
+
 // DuplicateGroup adalah satu kombinasi nilai yang muncul lebih dari sekali
 type DuplicateGroup struct {
 	Values []string `json:"values"`
