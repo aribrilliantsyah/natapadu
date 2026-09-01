@@ -348,8 +348,16 @@
 /* ── Scroll area ── */
 .scroll-area {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* Sebagian area gulir memakai flex column untuk mengatur jarak antar bagian.
+   Tanpa aturan ini anak-anaknya ikut menyusut (flex-shrink bawaan 1), sehingga
+   isinya termampatkan dan terpotong alih-alih meluap dan bisa digulir. */
+.scroll-area > * {
+  flex-shrink: 0;
 }
 
 /* ───────────────────────────────────────
