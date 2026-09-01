@@ -71,8 +71,18 @@ func NewApp(version, updateRepo string) *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	wailsRuntime.WindowCenter(ctx)
+}
+
+// domReady dipanggil setelah halaman selesai dimuat.
+//
+// Jendela HARUS ditampilkan di sini, bukan di startup. Wails menjalankan
+// OnStartup pada goroutine terpisah yang berlomba dengan Window.Run(), dan
+// Run() memanggil Hide() sendiri ketika StartHidden aktif. Bila WindowShow
+// dipanggil dari startup, Hide() bisa menang dan jendela tidak pernah muncul
+// sama sekali — persis kegagalan yang terjadi sebelumnya.
+func (a *App) domReady(ctx context.Context) {
 	wailsRuntime.WindowSetAlwaysOnTop(ctx, true)
+	wailsRuntime.WindowCenter(ctx)
 	wailsRuntime.WindowShow(ctx)
 }
 

@@ -7,6 +7,9 @@
     progress?: number;   // 0..100
     version?: string;
   } = $props();
+
+  // Dihitung di sini, bukan di markup: Svelte membaca "{/" sebagai penutup blok
+  const versionLabel = $derived(/^\d/.test(version) ? `v${version}` : version);
 </script>
 
 <div class="splash">
@@ -36,7 +39,7 @@
     </svg>
 
     <div class="name">Natapadu</div>
-    <div class="tag">Navigasi Master Data dan Alat Terpadu</div>
+    <div class="tagline">Navigasi Master Data dan Alat Terpadu</div>
   </div>
 
   <!-- Bar di bagian bawah jendela, seperti splash aplikasi desktop pada umumnya -->
@@ -49,7 +52,7 @@
       <div class="fill" style="width:{Math.max(2, Math.min(100, progress))}%"></div>
     </div>
     {#if version}
-      <div class="ver mono">v{version}</div>
+      <div class="ver mono">{versionLabel}</div>
     {/if}
   </div>
 </div>
@@ -81,7 +84,7 @@
     color: #f0f1f4;
     animation: rise 420ms 60ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
   }
-  .tag {
+  .tagline {
     font-size: 11.5px; color: #8b90a0; text-align: center;
     animation: rise 420ms 110ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
   }
@@ -126,7 +129,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .body svg, .name, .tag { animation: none; }
+    .body svg, .name, .tagline { animation: none; }
     .fill { transition: none; }
   }
 </style>
