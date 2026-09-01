@@ -95,8 +95,10 @@ func (d *Database) FileSize() (int64, error) {
 }
 
 // migrate initializes system tables
-func (d *Database) migrate() error {
-	schema := `
+// baselineSchema adalah struktur awal aplikasi. Semua pernyataan memakai
+// IF NOT EXISTS sehingga aman dijalankan pada database lama yang tabelnya
+// sudah ada — dipakai sebagai migrasi #1.
+const baselineSchema = `
 	CREATE TABLE IF NOT EXISTS users (
 		id TEXT PRIMARY KEY,
 		username TEXT UNIQUE NOT NULL,
@@ -209,6 +211,17 @@ func (d *Database) migrate() error {
 	CREATE INDEX IF NOT EXISTS idx_act_logs_created ON activity_logs (created_at DESC);
 	`
 
-	_, err := d.db.Exec(schema)
-	return err
+// migrations berisi seluruh langkah perubahan skema secara berurutan.
+// Menambah kolom baru di kemudian hari: tambahkan langkah BARU di akhir slice,
+// jangan mengubah baselineSchema — CREATE TABLE IF NOT EXISTS tidak berpengaruh
+// pada tabel yang sudah ada, sehingga kolomnya tidak akan pernah terpasang di
+// database pengguna lama.
+func (d *Database) migrations() []migration {
+	return []migration{
+		{name: "skema awal", sql: baselineSchema},
+	}
+}
+
+func (d *Database) migrate() error {
+	return d.runMigrations(d.migrations())
 }

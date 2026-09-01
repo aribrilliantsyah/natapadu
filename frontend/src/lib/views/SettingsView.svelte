@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { showToast, theme, applyTheme, type Theme } from '../stores/appState';
   import { HardDrive, UserPlus, Key, Folder, CheckCircle2, Sun, Moon, Heart } from 'lucide-svelte';
+  import UpdatePanel from '../components/UpdatePanel.svelte';
   import { GetAllUsers, CreateUser, UpdatePassword, BackupDatabase, SelectDirectory, GetDashboardSummary, SetSetting } from '../../../wailsjs/go/main/App';
   import type { models } from '../../../wailsjs/go/models';
 
@@ -144,6 +145,8 @@
             Aplikasi desktop pengolah master data skala besar · 100% lokal &amp; offline
           </div>
         </div>
+
+        <UpdatePanel />
 
         <div class="panel" style="padding:16px; display:flex; flex-direction:column; gap:12px;">
           <div style="font-size:13px; font-weight:600; color:var(--t1);">Dibuat Oleh</div>

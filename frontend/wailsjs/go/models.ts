@@ -655,3 +655,56 @@ export namespace models {
 
 }
 
+export namespace updater {
+	
+	export class Info {
+	    available: boolean;
+	    currentVersion: string;
+	    latestVersion: string;
+	    releaseNotes: string;
+	    releaseUrl: string;
+	    downloadUrl: string;
+	    assetName: string;
+	    assetSize: number;
+	    publishedAt: string;
+	    note: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Info(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.available = source["available"];
+	        this.currentVersion = source["currentVersion"];
+	        this.latestVersion = source["latestVersion"];
+	        this.releaseNotes = source["releaseNotes"];
+	        this.releaseUrl = source["releaseUrl"];
+	        this.downloadUrl = source["downloadUrl"];
+	        this.assetName = source["assetName"];
+	        this.assetSize = source["assetSize"];
+	        this.publishedAt = source["publishedAt"];
+	        this.note = source["note"];
+	    }
+	}
+	export class InstallResult {
+	    installed: boolean;
+	    needsRestart: boolean;
+	    path: string;
+	    message: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new InstallResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.installed = source["installed"];
+	        this.needsRestart = source["needsRestart"];
+	        this.path = source["path"];
+	        this.message = source["message"];
+	    }
+	}
+
+}
+

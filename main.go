@@ -14,9 +14,17 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+// Version diisi saat build lewat -ldflags "-X main.Version=1.2.3".
+// Nilai "dev" berarti build lokal, dan selalu dianggap lebih tua daripada
+// rilis mana pun sehingga pengembang tetap melihat tawaran pembaruan.
+var Version = "dev"
+
+// UpdateRepo adalah repositori GitHub tempat rilis dicari.
+const UpdateRepo = "aribrilliantsyah/natapadu"
+
 func main() {
 	// Create an instance of the app structure
-	app := NewApp()
+	app := NewApp(Version, UpdateRepo)
 
 	// Create application with options
 	err := wails.Run(&options.App{

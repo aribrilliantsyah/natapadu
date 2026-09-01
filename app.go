@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"path/filepath"
+	"time"
 
 	"natapadu-app/backend/activity"
 	"natapadu-app/backend/auth"
@@ -13,6 +16,7 @@ import (
 	"natapadu-app/backend/models"
 	"natapadu-app/backend/settings"
 	"natapadu-app/backend/template"
+	"natapadu-app/backend/updater"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -28,10 +32,14 @@ type App struct {
 	exportSvc   *exporter.ExportService
 	activitySvc *activity.ActivityService
 	settingsSvc *settings.SettingsService
+	updateSvc   *updater.Service
+
+	version       string
+	pendingUpdate string // lokasi berkas pembaruan yang sudah diunduh
 }
 
 // NewApp creates a new App application struct
-func NewApp() *App {
+func NewApp(version, updateRepo string) *App {
 	database, err := db.GetDatabase()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to initialize database: %v", err))
@@ -46,6 +54,8 @@ func NewApp() *App {
 	settingsSvc := settings.NewSettingsService(database)
 
 	return &App{
+		version:     version,
+		updateSvc:   updater.New(updateRepo, version),
 		db:          database,
 		authSvc:     authSvc,
 		templateSvc: tplSvc,
@@ -353,6 +363,88 @@ func (a *App) DownloadDataTemplate(templateID, saveDirectory string) (string, er
 	}
 	_ = a.activitySvc.Log("", "", "DOWNLOAD_TEMPLATE", templateID, fmt.Sprintf("Template pengisian dibuat di %s", filePath))
 	return filePath, nil
+}
+
+// ==========================================
+// Update API
+// ==========================================
+
+// GetAppVersion mengembalikan versi yang sedang berjalan ("dev" untuk build lokal)
+func (a *App) GetAppVersion() string {
+	return a.version
+}
+
+// CheckForUpdate menanyakan rilis terbaru ke GitHub.
+// Hanya memeriksa — tidak pernah mengunduh atau memasang tanpa perintah pengguna.
+func (a *App) CheckForUpdate() (*updater.Info, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+
+	info, err := a.updateSvc.Check(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if info.Available {
+		_ = a.activitySvc.Log("", "", "UPDATE_AVAILABLE", info.LatestVersion,
+			fmt.Sprintf("Versi %s tersedia (sedang berjalan %s)", info.LatestVersion, info.CurrentVersion))
+	}
+	return info, nil
+}
+
+// DownloadUpdate mengunduh berkas rilis, mengirim kemajuannya lewat event
+// "update:progress" agar UI bisa menampilkan bilah kemajuan.
+func (a *App) DownloadUpdate(downloadURL, assetName string) (string, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	path, err := a.updateSvc.Download(ctx, downloadURL, assetName, func(downloaded, total int64) {
+		wailsRuntime.EventsEmit(a.ctx, "update:progress", map[string]int64{
+			"downloaded": downloaded,
+			"total":      total,
+		})
+	})
+	if err != nil {
+		return "", err
+	}
+
+	a.pendingUpdate = path
+	_ = a.activitySvc.Log("", "", "UPDATE_DOWNLOADED", assetName, fmt.Sprintf("Berkas pembaruan diunduh ke %s", path))
+	return path, nil
+}
+
+// InstallUpdate memasang berkas yang sudah diunduh.
+// Di Linux (AppImage) berkas lama diganti dan disimpan sebagai cadangan;
+// di Windows berkas diserahkan ke pengguna karena .exe yang sedang berjalan
+// tidak bisa menimpa dirinya sendiri.
+func (a *App) InstallUpdate() (*updater.InstallResult, error) {
+	if a.pendingUpdate == "" {
+		return nil, errors.New("belum ada berkas pembaruan yang diunduh")
+	}
+
+	res, err := updater.Install(a.pendingUpdate)
+	if err != nil {
+		return nil, err
+	}
+	if res.Installed {
+		_ = a.activitySvc.Log("", "", "UPDATE_INSTALLED", res.Path, "Pembaruan terpasang, menunggu aplikasi dijalankan ulang")
+	}
+	return res, nil
+}
+
+// OpenUpdateFolder membuka lokasi berkas pembaruan di pengelola berkas sistem
+func (a *App) OpenUpdateFolder() error {
+	if a.pendingUpdate == "" {
+		return errors.New("belum ada berkas pembaruan yang diunduh")
+	}
+	wailsRuntime.BrowserOpenURL(a.ctx, "file://"+filepath.Dir(a.pendingUpdate))
+	return nil
+}
+
+// OpenReleasePage membuka halaman rilis di peramban
+func (a *App) OpenReleasePage(url string) {
+	if url != "" {
+		wailsRuntime.BrowserOpenURL(a.ctx, url)
+	}
 }
 
 // ==========================================

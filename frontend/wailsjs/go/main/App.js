@@ -14,6 +14,10 @@ export function CancelImport(arg1) {
   return window['go']['main']['App']['CancelImport'](arg1);
 }
 
+export function CheckForUpdate() {
+  return window['go']['main']['App']['CheckForUpdate']();
+}
+
 export function CreateTemplate(arg1) {
   return window['go']['main']['App']['CreateTemplate'](arg1);
 }
@@ -38,6 +42,10 @@ export function DownloadDataTemplate(arg1, arg2) {
   return window['go']['main']['App']['DownloadDataTemplate'](arg1, arg2);
 }
 
+export function DownloadUpdate(arg1, arg2) {
+  return window['go']['main']['App']['DownloadUpdate'](arg1, arg2);
+}
+
 export function DuplicateTemplate(arg1, arg2) {
   return window['go']['main']['App']['DuplicateTemplate'](arg1, arg2);
 }
@@ -60,6 +68,10 @@ export function GetAllTemplates() {
 
 export function GetAllUsers() {
   return window['go']['main']['App']['GetAllUsers']();
+}
+
+export function GetAppVersion() {
+  return window['go']['main']['App']['GetAppVersion']();
 }
 
 export function GetCurrentUser() {
@@ -110,12 +122,24 @@ export function ImportTemplateSchema(arg1) {
   return window['go']['main']['App']['ImportTemplateSchema'](arg1);
 }
 
+export function InstallUpdate() {
+  return window['go']['main']['App']['InstallUpdate']();
+}
+
 export function Login(arg1, arg2) {
   return window['go']['main']['App']['Login'](arg1, arg2);
 }
 
 export function Logout() {
   return window['go']['main']['App']['Logout']();
+}
+
+export function OpenReleasePage(arg1) {
+  return window['go']['main']['App']['OpenReleasePage'](arg1);
+}
+
+export function OpenUpdateFolder() {
+  return window['go']['main']['App']['OpenUpdateFolder']();
 }
 
 export function PreviewExcelFile(arg1, arg2, arg3, arg4) {

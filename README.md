@@ -167,6 +167,17 @@ frontend/src/
 
 Versi Go di CI dibaca langsung dari `go.mod`, jadi tabel ini dan pipeline build tidak akan melenceng satu sama lain.
 
+## Pembaruan Otomatis
+
+Aplikasi memeriksa rilis baru di GitHub saat dibuka, lalu menampilkan tawaran pembaruan di **Pengaturan → Tentang**. Pemeriksaan berjalan otomatis; **pengunduhan dan pemasangan tidak pernah berjalan tanpa Anda menekan tombol.**
+
+| Platform | Perilaku |
+|---|---|
+| Linux (AppImage) | Diunduh lalu dipasang otomatis. Versi lama disimpan sebagai `.old` sebagai jalan mundur. Cukup tutup-buka aplikasi. |
+| Windows | Diunduh, lalu Anda ganti sendiri berkas `.exe` lama. Berkas `.exe` yang sedang berjalan tidak bisa menimpa dirinya sendiri. |
+
+Versi disematkan saat build dari tag git, jadi hanya binary hasil rilis yang punya nomor versi — build lokal bertanda `dev` dan selalu ditawari pembaruan.
+
 ## Data Anda
 
 Database disimpan di direktori konfigurasi pengguna:
@@ -177,6 +188,8 @@ Database disimpan di direktori konfigurasi pengguna:
 | Windows | `%APPDATA%\natapadu\natapadu.db` |
 
 Berkas ini berisi seluruh data Anda. Cadangkan lewat **Pengaturan → Backup DB**, atau salin langsung. Memindahkannya ke komputer lain akan membawa serta seluruh workspace beserta pengaturannya.
+
+**Data Anda aman saat memperbarui aplikasi.** Database berada di luar berkas program, jadi mengganti binary tidak menyentuhnya. Perubahan struktur database dijalankan sebagai migrasi bernomor (`PRAGMA user_version`) yang berjalan tepat sekali dan tidak pernah membuat ulang data; sebelum migrasi pertama dijalankan, salinan berkas dibuat otomatis berdampingan dengan aslinya.
 
 ## Kontribusi
 
