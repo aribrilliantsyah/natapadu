@@ -248,3 +248,35 @@ type ExcelSheetPreview struct {
 	Headers      []string   `json:"headers"`
 	SampleRows   [][]string `json:"sampleRows"`
 }
+
+// VisualizationQueryRequest mendefinisikan permintaan agregasi dinamis untuk widget visualisasi
+type VisualizationQueryRequest struct {
+	TemplateID  string            `json:"templateId"`
+	WidgetType  string            `json:"widgetType"`  // 'card', 'bar', 'line', 'donut', 'toplist', 'table'
+	DimField    string            `json:"dimField"`    // Kolom dimensi/kategori (group by)
+	MetricField string            `json:"metricField"` // Kolom metrik/nilai numerik (opsional jika count)
+	AggType     string            `json:"aggType"`     // 'count', 'distinct_count', 'sum', 'avg', 'min', 'max'
+	DateTrunc   string            `json:"dateTrunc"`   // 'day' (per hari), 'month' (per bulan), 'year' (per tahun), atau ''
+	SortBy      string            `json:"sortBy"`      // 'metric_desc', 'metric_asc', 'dim_asc', 'dim_desc'
+	Limit       int               `json:"limit"`       // Batas data (default 10, maks 500)
+	Filters     []FilterCondition `json:"filters"`
+	FilterLogic string            `json:"filterLogic"`
+}
+
+// VisualizationDataPoint mewakili satu titik data / baris dalam visualisasi
+type VisualizationDataPoint struct {
+	Label     string  `json:"label"`
+	Value     float64 `json:"value"`
+	Formatted string  `json:"formatted"`
+	Percent   float64 `json:"percent"`
+	Count     int64   `json:"count,omitempty"`
+}
+
+// VisualizationQueryResult adalah hasil komputasi agregasi untuk satu widget
+type VisualizationQueryResult struct {
+	Total       float64                  `json:"total"`
+	Formatted   string                   `json:"formatted"`
+	Data        []VisualizationDataPoint `json:"data"`
+	ExecutionMs int64                    `json:"executionMs"`
+}
+

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,6 +32,17 @@ func BuildWhereClause(tableName string, cols []models.TemplateColumn, filters []
 	colMap := make(map[string]models.TemplateColumn)
 	for _, c := range cols {
 		colMap[strings.ToLower(c.FieldName)] = c
+	}
+	// Daftarkan kolom audit internal SQLite agar bisa difilter
+	colMap["_created_at"] = models.TemplateColumn{
+		FieldName:   "_created_at",
+		DisplayName: "Waktu Dibuat",
+		DataType:    "DATETIME",
+	}
+	colMap["_updated_at"] = models.TemplateColumn{
+		FieldName:   "_updated_at",
+		DisplayName: "Waktu Diubah",
+		DataType:    "DATETIME",
 	}
 
 	var clauses []string
@@ -109,8 +121,15 @@ func BuildWhereClause(tableName string, cols []models.TemplateColumn, filters []
 			args = append(args, f.Value)
 
 		case "between":
-			clauses = append(clauses, fmt.Sprintf("%s BETWEEN ? AND ?", fieldExpr))
-			args = append(args, f.Value, f.ValueTo)
+			vStr := fmt.Sprintf("%v", f.Value)
+			vToStr := fmt.Sprintf("%v", f.ValueTo)
+			if (strings.EqualFold(c.DataType, "DATE") || strings.EqualFold(c.DataType, "DATETIME") || strings.HasPrefix(strings.ToLower(c.FieldName), "_created") || strings.HasPrefix(strings.ToLower(c.FieldName), "_updated")) && len(vStr) == 10 && len(vToStr) == 10 {
+				clauses = append(clauses, fmt.Sprintf("date(%s) BETWEEN ? AND ?", fieldExpr))
+				args = append(args, f.Value, f.ValueTo)
+			} else {
+				clauses = append(clauses, fmt.Sprintf("%s BETWEEN ? AND ?", fieldExpr))
+				args = append(args, f.Value, f.ValueTo)
+			}
 
 		case "before":
 			clauses = append(clauses, fmt.Sprintf("%s < ?", fieldExpr))
@@ -683,4 +702,277 @@ func (s *DataGridService) InsertRows(templateID string, rows []map[string]interf
 		return 0, err
 	}
 	return inserted, nil
+}
+
+// QueryVisualization mengeksekusi agregasi dinamis untuk widget visualisasi
+func (s *DataGridService) QueryVisualization(req models.VisualizationQueryRequest) (*models.VisualizationQueryResult, error) {
+	start := time.Now()
+	tpl, err := s.templateSvc.GetTemplateByID(req.TemplateID)
+	if err != nil {
+		return nil, fmt.Errorf("workspace tidak ditemukan: %w", err)
+	}
+
+	tableName := template.GetTableNameForTemplate(tpl.ID)
+	colMap := make(map[string]models.TemplateColumn)
+	for _, c := range tpl.Columns {
+		colMap[strings.ToLower(c.FieldName)] = c
+	}
+
+	// Validasi kolom dimensi
+	var dimCol *models.TemplateColumn
+	if req.DimField != "" {
+		if c, ok := colMap[strings.ToLower(req.DimField)]; ok {
+			dimCol = &c
+		}
+	}
+
+	// Validasi kolom metrik
+	var metricCol *models.TemplateColumn
+	if req.MetricField != "" {
+		if c, ok := colMap[strings.ToLower(req.MetricField)]; ok {
+			metricCol = &c
+		}
+	}
+
+	agg := strings.ToLower(strings.TrimSpace(req.AggType))
+	if agg == "" {
+		agg = "count"
+	}
+
+	whereSQL, args, err := BuildWhereClause(tableName, tpl.Columns, req.Filters, "", req.FilterLogic)
+	if err != nil {
+		return nil, err
+	}
+
+	formatVal := func(v float64) string {
+		if v == float64(int64(v)) {
+			return formatThousands(int64(v))
+		}
+		return fmt.Sprintf("%.2f", v)
+	}
+
+	// Jika widget berupa Single Stat / KPI Card
+	if req.WidgetType == "card" || dimCol == nil {
+		var metricExpr string
+		switch agg {
+		case "distinct_count":
+			if dimCol != nil {
+				metricExpr = fmt.Sprintf("COUNT(DISTINCT [%s])", dimCol.FieldName)
+			} else if metricCol != nil {
+				metricExpr = fmt.Sprintf("COUNT(DISTINCT [%s])", metricCol.FieldName)
+			} else {
+				metricExpr = "COUNT(*)"
+			}
+		case "sum":
+			if metricCol != nil {
+				metricExpr = fmt.Sprintf("COALESCE(SUM(CAST([%s] AS REAL)), 0)", metricCol.FieldName)
+			} else {
+				metricExpr = "COUNT(*)"
+			}
+		case "avg":
+			if metricCol != nil {
+				metricExpr = fmt.Sprintf("COALESCE(AVG(CAST([%s] AS REAL)), 0)", metricCol.FieldName)
+			} else {
+				metricExpr = "COUNT(*)"
+			}
+		case "min":
+			if metricCol != nil {
+				metricExpr = fmt.Sprintf("COALESCE(MIN(CAST([%s] AS REAL)), 0)", metricCol.FieldName)
+			} else {
+				metricExpr = "0"
+			}
+		case "max":
+			if metricCol != nil {
+				metricExpr = fmt.Sprintf("COALESCE(MAX(CAST([%s] AS REAL)), 0)", metricCol.FieldName)
+			} else {
+				metricExpr = "0"
+			}
+		default: // count
+			metricExpr = "COUNT(*)"
+		}
+
+		q := fmt.Sprintf("SELECT %s FROM %s %s", metricExpr, tableName, whereSQL)
+		var val sql.NullFloat64
+		if err := s.db.Conn().QueryRow(q, args...).Scan(&val); err != nil {
+			return nil, fmt.Errorf("gagal menghitung metrik: %w", err)
+		}
+
+		total := val.Float64
+		return &models.VisualizationQueryResult{
+			Total:       total,
+			Formatted:   formatVal(total),
+			Data:        nil,
+			ExecutionMs: time.Since(start).Milliseconds(),
+		}, nil
+	}
+
+	// Visualisasi yang dikelompokkan (bar, line, donut, toplist, table)
+	var metricExpr string
+	switch agg {
+	case "distinct_count":
+		if metricCol != nil {
+			metricExpr = fmt.Sprintf("COUNT(DISTINCT [%s])", metricCol.FieldName)
+		} else {
+			metricExpr = "COUNT(*)"
+		}
+	case "sum":
+		if metricCol != nil {
+			metricExpr = fmt.Sprintf("COALESCE(SUM(CAST([%s] AS REAL)), 0)", metricCol.FieldName)
+		} else {
+			metricExpr = "COUNT(*)"
+		}
+	case "avg":
+		if metricCol != nil {
+			metricExpr = fmt.Sprintf("COALESCE(AVG(CAST([%s] AS REAL)), 0)", metricCol.FieldName)
+		} else {
+			metricExpr = "COUNT(*)"
+		}
+	case "min":
+		if metricCol != nil {
+			metricExpr = fmt.Sprintf("COALESCE(MIN(CAST([%s] AS REAL)), 0)", metricCol.FieldName)
+		} else {
+			metricExpr = "0"
+		}
+	case "max":
+		if metricCol != nil {
+			metricExpr = fmt.Sprintf("COALESCE(MAX(CAST([%s] AS REAL)), 0)", metricCol.FieldName)
+		} else {
+			metricExpr = "0"
+		}
+	default: // count
+		metricExpr = "COUNT(*)"
+	}
+
+	limit := req.Limit
+	if limit <= 0 || limit > 500 {
+		if req.WidgetType == "line" {
+			limit = 60
+		} else {
+			limit = 10
+		}
+	}
+
+	orderClause := "val DESC, label ASC"
+	switch req.SortBy {
+	case "metric_asc":
+		orderClause = "val ASC, label ASC"
+	case "dim_asc":
+		orderClause = "label ASC"
+	case "dim_desc":
+		orderClause = "label DESC"
+	case "metric_desc":
+		orderClause = "val DESC, label ASC"
+	default:
+		if req.WidgetType == "line" {
+			orderClause = "label ASC"
+		}
+	}
+
+	isDateCol := strings.EqualFold(dimCol.DataType, "DATE") ||
+		strings.EqualFold(dimCol.DataType, "DATETIME") ||
+		strings.HasPrefix(strings.ToLower(dimCol.FieldName), "_created") ||
+		strings.HasPrefix(strings.ToLower(dimCol.FieldName), "_updated") ||
+		strings.Contains(strings.ToLower(dimCol.FieldName), "tanggal") ||
+		strings.Contains(strings.ToLower(dimCol.FieldName), "tgl") ||
+		strings.Contains(strings.ToLower(dimCol.FieldName), "date")
+
+	dateTrunc := strings.ToLower(strings.TrimSpace(req.DateTrunc))
+	if dateTrunc == "" && (req.WidgetType == "line" || isDateCol) && isDateCol {
+		dateTrunc = "day"
+	}
+
+	labelExpr := fmt.Sprintf("COALESCE(NULLIF(TRIM(CAST([%s] AS TEXT)), ''), '(Kosong)')", dimCol.FieldName)
+
+	switch dateTrunc {
+	case "day":
+		labelExpr = fmt.Sprintf(`CASE 
+			WHEN [%s] LIKE '____-__-__%%' THEN SUBSTR([%s], 1, 10)
+			WHEN date([%s]) IS NOT NULL THEN date([%s])
+			ELSE COALESCE(NULLIF(TRIM(CAST([%s] AS TEXT)), ''), '(Kosong)')
+		END`, dimCol.FieldName, dimCol.FieldName, dimCol.FieldName, dimCol.FieldName, dimCol.FieldName)
+	case "month":
+		labelExpr = fmt.Sprintf(`CASE 
+			WHEN [%s] LIKE '____-__%%' THEN SUBSTR([%s], 1, 7)
+			WHEN strftime('%%Y-%%m', [%s]) IS NOT NULL THEN strftime('%%Y-%%m', [%s])
+			ELSE COALESCE(NULLIF(TRIM(CAST([%s] AS TEXT)), ''), '(Kosong)')
+		END`, dimCol.FieldName, dimCol.FieldName, dimCol.FieldName, dimCol.FieldName, dimCol.FieldName)
+	case "year":
+		labelExpr = fmt.Sprintf(`CASE 
+			WHEN [%s] LIKE '____%%' THEN SUBSTR([%s], 1, 4)
+			WHEN strftime('%%Y', [%s]) IS NOT NULL THEN strftime('%%Y', [%s])
+			ELSE COALESCE(NULLIF(TRIM(CAST([%s] AS TEXT)), ''), '(Kosong)')
+		END`, dimCol.FieldName, dimCol.FieldName, dimCol.FieldName, dimCol.FieldName, dimCol.FieldName)
+	}
+
+	q := fmt.Sprintf(`
+		SELECT %s AS label,
+		       %s AS val,
+		       COUNT(*) AS cnt
+		FROM %s
+		%s
+		GROUP BY label
+		ORDER BY %s
+		LIMIT ?`,
+		labelExpr, metricExpr, tableName, whereSQL, orderClause,
+	)
+
+	qArgs := append(args, limit)
+	rows, err := s.db.Conn().Query(q, qArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("gagal mengeksekusi visualisasi: %w", err)
+	}
+	defer rows.Close()
+
+	var points []models.VisualizationDataPoint
+	var totalVal float64
+
+	for rows.Next() {
+		var lbl string
+		var val float64
+		var cnt int64
+		if err := rows.Scan(&lbl, &val, &cnt); err != nil {
+			continue
+		}
+		points = append(points, models.VisualizationDataPoint{
+			Label:     lbl,
+			Value:     val,
+			Formatted: formatVal(val),
+			Count:     cnt,
+		})
+		totalVal += val
+	}
+
+	for i := range points {
+		if totalVal > 0 {
+			points[i].Percent = (points[i].Value / totalVal) * 100
+		}
+	}
+
+	return &models.VisualizationQueryResult{
+		Total:       totalVal,
+		Formatted:   formatVal(totalVal),
+		Data:        points,
+		ExecutionMs: time.Since(start).Milliseconds(),
+	}, nil
+}
+
+func formatThousands(n int64) string {
+	in := strconv.FormatInt(n, 10)
+	neg := false
+	if n < 0 {
+		neg = true
+		in = in[1:]
+	}
+	var out []byte
+	l := len(in)
+	for i, ch := range []byte(in) {
+		if i > 0 && (l-i)%3 == 0 {
+			out = append(out, '.')
+		}
+		out = append(out, ch)
+	}
+	if neg {
+		return "-" + string(out)
+	}
+	return string(out)
 }

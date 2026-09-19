@@ -118,6 +118,10 @@ export function GetTemplateByID(arg1) {
   return window['go']['main']['App']['GetTemplateByID'](arg1);
 }
 
+export function GetVisualizationConfig(arg1) {
+  return window['go']['main']['App']['GetVisualizationConfig'](arg1);
+}
+
 export function ImportTemplateSchema(arg1) {
   return window['go']['main']['App']['ImportTemplateSchema'](arg1);
 }
@@ -150,6 +154,10 @@ export function QueryData(arg1) {
   return window['go']['main']['App']['QueryData'](arg1);
 }
 
+export function QueryVisualization(arg1) {
+  return window['go']['main']['App']['QueryVisualization'](arg1);
+}
+
 export function SaveDataRow(arg1, arg2, arg3) {
   return window['go']['main']['App']['SaveDataRow'](arg1, arg2, arg3);
 }
@@ -160,6 +168,10 @@ export function SaveDataRows(arg1, arg2) {
 
 export function SaveSavedFilter(arg1) {
   return window['go']['main']['App']['SaveSavedFilter'](arg1);
+}
+
+export function SaveVisualizationConfig(arg1, arg2) {
+  return window['go']['main']['App']['SaveVisualizationConfig'](arg1, arg2);
 }
 
 export function SelectDirectory(arg1) {

@@ -3,7 +3,8 @@
   import { activeQuery, showToast } from '../stores/appState';
   import {
     ArrowLeft, Search, Trash2, ChevronLeft, ChevronRight, RefreshCw, Plus, X,
-    SlidersHorizontal, Download, Upload, Settings2, Pencil, Columns3, Layers, CopyCheck
+    SlidersHorizontal, Download, Upload, Settings2, Pencil, Columns3, Layers, CopyCheck,
+    BarChart2
   } from 'lucide-svelte';
   import {
     GetTemplateByID, QueryData, DeleteRow, BulkDeleteRows, TruncateDataset, GetDataRow
@@ -15,6 +16,7 @@
   import RowEditor from './RowEditor.svelte';
   import DistinctPanel from './DistinctPanel.svelte';
   import DuplicatePanel from './DuplicatePanel.svelte';
+  import VisualizationView from './VisualizationView.svelte';
 
   let { tpl, startWith = 'data', onBack, onChanged }: {
     tpl: models.Template;
@@ -35,6 +37,7 @@
 
   // Dialog aktif — semua aksi workspace tinggal di satu halaman ini
   let dialog = $state<'' | 'structure' | 'import' | 'export' | 'row' | 'distinct' | 'duplicate'>(startWith === 'import' ? 'import' : '');
+  let viewMode = $state<'data' | 'visualize'>('data');
   let filterLogic = $state<'AND' | 'OR'>('AND');
   let editRowId = $state(0), editRowData = $state<Record<string, any>>({});
 
@@ -186,6 +189,9 @@
   onMount(run);
 </script>
 
+{#if viewMode === 'visualize'}
+  <VisualizationView tpl={cur} onBack={() => { viewMode = 'data'; reloadAll(); }} />
+{:else}
 <div style="display:flex; flex-direction:column; height:100%; overflow:hidden;">
   <!-- Header workspace: identitas + semua aksi -->
   <div class="topbar">
@@ -203,6 +209,9 @@
     </button>
     <button class="btn btn-outline btn-xs" disabled={!ready} onclick={() => dialog = 'import'}>
       <Upload size={12} /> Import Excel
+    </button>
+    <button class="btn btn-outline btn-xs" disabled={!ready} onclick={() => viewMode = 'visualize'}>
+      <BarChart2 size={12} /> Visualisasi
     </button>
     <button class="btn btn-outline btn-xs" disabled={!ready} onclick={newRow}>
       <Plus size={12} /> Tambah Data
@@ -470,6 +479,7 @@
     </div>
   {/if}
 </div>
+{/if}
 
 {#if dialog === 'structure'}
   <TemplateDesigner

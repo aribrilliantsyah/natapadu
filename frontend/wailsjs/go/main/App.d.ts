@@ -61,6 +61,8 @@ export function GetSetting(arg1:string,arg2:string):Promise<string>;
 
 export function GetTemplateByID(arg1:string):Promise<models.Template>;
 
+export function GetVisualizationConfig(arg1:string):Promise<string>;
+
 export function ImportTemplateSchema(arg1:string):Promise<models.Template>;
 
 export function InstallUpdate():Promise<updater.InstallResult>;
@@ -77,11 +79,15 @@ export function PreviewExcelFile(arg1:string,arg2:string,arg3:number,arg4:number
 
 export function QueryData(arg1:models.QueryRequest):Promise<models.QueryResponse>;
 
+export function QueryVisualization(arg1:models.VisualizationQueryRequest):Promise<models.VisualizationQueryResult>;
+
 export function SaveDataRow(arg1:string,arg2:number,arg3:Record<string, string>):Promise<number>;
 
 export function SaveDataRows(arg1:string,arg2:Array<Record<string, string>>):Promise<models.SaveRowsResult>;
 
 export function SaveSavedFilter(arg1:models.SavedFilter):Promise<void>;
+
+export function SaveVisualizationConfig(arg1:string,arg2:string):Promise<void>;
 
 export function SelectDirectory(arg1:string):Promise<string>;
 

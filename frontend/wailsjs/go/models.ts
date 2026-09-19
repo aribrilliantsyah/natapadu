@@ -704,6 +704,110 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class VisualizationDataPoint {
+	    label: string;
+	    value: number;
+	    formatted: string;
+	    percent: number;
+	    count?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new VisualizationDataPoint(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.label = source["label"];
+	        this.value = source["value"];
+	        this.formatted = source["formatted"];
+	        this.percent = source["percent"];
+	        this.count = source["count"];
+	    }
+	}
+	export class VisualizationQueryRequest {
+	    templateId: string;
+	    widgetType: string;
+	    dimField: string;
+	    metricField: string;
+	    aggType: string;
+	    dateTrunc: string;
+	    sortBy: string;
+	    limit: number;
+	    filters: FilterCondition[];
+	    filterLogic: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new VisualizationQueryRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.templateId = source["templateId"];
+	        this.widgetType = source["widgetType"];
+	        this.dimField = source["dimField"];
+	        this.metricField = source["metricField"];
+	        this.aggType = source["aggType"];
+	        this.dateTrunc = source["dateTrunc"];
+	        this.sortBy = source["sortBy"];
+	        this.limit = source["limit"];
+	        this.filters = this.convertValues(source["filters"], FilterCondition);
+	        this.filterLogic = source["filterLogic"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class VisualizationQueryResult {
+	    total: number;
+	    formatted: string;
+	    data: VisualizationDataPoint[];
+	    executionMs: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new VisualizationQueryResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.total = source["total"];
+	        this.formatted = source["formatted"];
+	        this.data = this.convertValues(source["data"], VisualizationDataPoint);
+	        this.executionMs = source["executionMs"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 
 }
 

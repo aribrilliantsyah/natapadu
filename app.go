@@ -638,3 +638,15 @@ func (a *App) GetSavedFilters(templateID string) ([]models.SavedFilter, error) {
 func (a *App) DeleteSavedFilter(filterID string) error {
 	return a.settingsSvc.DeleteSavedFilter(filterID)
 }
+
+func (a *App) QueryVisualization(req models.VisualizationQueryRequest) (*models.VisualizationQueryResult, error) {
+	return a.dataGridSvc.QueryVisualization(req)
+}
+
+func (a *App) SaveVisualizationConfig(templateID string, configJSON string) error {
+	return a.settingsSvc.SetSetting("viz_config_"+templateID, configJSON)
+}
+
+func (a *App) GetVisualizationConfig(templateID string) (string, error) {
+	return a.settingsSvc.GetSetting("viz_config_"+templateID, "[]"), nil
+}
